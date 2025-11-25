@@ -1,3 +1,4 @@
+
 # 🏥 Clinic Sentosa - Modern Clinic Management System
 
 **Sistem Manajemen Klinik Modern Berbasis Web**
@@ -13,7 +14,7 @@
 ## 👥 Tim Pengembang
 
 **Ketua Kelompok:**
-- **Imanuel Palenewen** 
+- **Palenewen, Imanuel** 
 
 **Anggota Kelompok :**
 - **Umboh, Timothy**
@@ -34,7 +35,7 @@ Clinic Sentosa adalah sistem manajemen klinik terpadu yang dirancang untuk memod
 ### ✨ Fitur Utama
 
 - 🏥 **Manajemen Pasien**: Pendaftaran pasien baru, riwayat kunjungan, dan manajemen antrian.
-- 👨‍⚕️ **Dashboard Dokter**: Akses rekam medis, diagnosa, dan pembuatan resep obat digital.
+- 👨‍⚕ **Dashboard Dokter**: Akses rekam medis, diagnosa, dan pembuatan resep obat digital.
 - 💊 **Sistem Apotek**: Pemrosesan resep, manajemen stok obat, dan penyerahan obat.
 - 💰 **Kasir & Keuangan**: Pembayaran terintegrasi dan laporan pendapatan harian/bulanan.
 - 🔐 **Role-Based Access**: Akses aman untuk Admin, Dokter, Apoteker, Pemilik, dan Pasien.
@@ -63,16 +64,16 @@ Clinic Sentosa adalah sistem manajemen klinik terpadu yang dirancang untuk memod
 
 ### 📥 Langkah 1: Clone Repository
 
-```bash
+bash
 git clone https://github.com/Imanuelpalenewen/clinic-sentosa-ui.git
 cd clinic-sentosa-ui
-```
+
 
 ### 📦 Langkah 2: Install Dependencies
 
-```bash
+bash
 npm install
-```
+
 
 ### 🔑 Langkah 3: Setup Environment Variables
 
@@ -80,12 +81,12 @@ npm install
 
 2. Edit file `.env` dan isi dengan kredensial Supabase Anda:
 
-```env
+env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
 
-### 🗄️ Langkah 4: Setup Database (Supabase)
+
+### 🗄 Langkah 4: Setup Database (Supabase)
 
 1. Login ke [Supabase Dashboard](https://supabase.com/dashboard).
 2. Masuk ke menu **SQL Editor**.
@@ -95,9 +96,9 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### ▶ Langkah 5: Jalankan Aplikasi
 
-```bash
+bash
 npm run dev
-```
+
 
 Aplikasi akan berjalan di: **http://localhost:8080** (atau port lain yang tersedia).
 
@@ -115,11 +116,25 @@ Aplikasi akan berjalan di: **http://localhost:8080** (atau port lain yang tersed
 3. **Farmasi**: Apoteker menerima resep, menyiapkan obat, dan update status.
 4. **Pembayaran**: Kasir memproses pembayaran.
 
+### 🔐 Akun Demo (Testing)
+
+Berikut adalah daftar akun yang sudah disiapkan untuk keperluan demonstrasi dan pengujian sistem:
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Admin** | `admin@sentosa.com` | `123456` |
+| **Dokter** | `doctor@sentosa.com` | `123456` |
+| **Apoteker** | `apoteker@sentosa.com` | `123456` |
+| **Owner** | `owner@sentosa.com` | `123456` |
+| **Pasien** | `noel2@sentosa.com` | `123456` |
+
+> **Catatan:** Gunakan akun-akun di atas untuk masuk dan menguji fitur sesuai dengan hak akses masing-masing role.
+
 ---
 
 ## 🗂 Struktur Project
 
-```
+
 clinic-sentosa/
 ├── src/
 │   ├── components/        # Komponen UI Reusable (Button, Input, dll)
@@ -135,7 +150,7 @@ clinic-sentosa/
 ├── public/               # Static assets
 ├── supabase_schema.sql   # Script database
 └── README.md             # Dokumentasi ini
-```
+
 
 ---
 
@@ -187,3 +202,4 @@ Untuk pertanyaan atau feedback, silakan hubungi:
 *Clinic Sentosa - Your Health, Our Priority*
 
 </div>
+
