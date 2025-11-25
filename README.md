@@ -167,6 +167,17 @@ clinic-sentosa/
 
 Proyek ini dilisensikan di bawah [MIT License](LICENSE).
 
+--- 
+
+## 📧 Kontak
+
+Untuk pertanyaan atau feedback, silakan hubungi:
+
+- **GitHub**: [Timothy Umboh](https://github.com/Umboh103)
+- **GitHub**: [Imanuel Palenewen](https://github.com/Imanuelpalenewen)
+- **Repository**: [Clinic Medical System](https://github.com/Umboh103/Final-Clinic-Sentosa)
+
+
 ---
 
 <div align="center">
