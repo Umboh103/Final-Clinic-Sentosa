@@ -13,10 +13,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PatientRegistration = () => {
+  const [loading, setLoading] = useState(false);
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [formData, setFormData] = useState({
+    nik: "",
     nama: "",
     tanggalLahir: "",
     jenisKelamin: "",
@@ -24,8 +28,7 @@ const PatientRegistration = () => {
     telepon: "",
     keluhan: "",
     dokter: "",
-    tanggalPeriksa: "",
-    jamPeriksa: "",
+    tanggalPeriksa: new Date().toISOString().split('T')[0],
   });
 
   const navItems = [
@@ -40,9 +43,87 @@ const PatientRegistration = () => {
     { label: "Struk Pembayaran", path: "/patient/receipt", icon: <Receipt className="h-5 w-5" /> },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'doctor');
+
+      if (data) setDoctors(data);
+      if (error) console.error('Error fetching doctors:', error);
+    };
+
+    fetchDoctors();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Pendaftaran berhasil! Nomor antrian Anda: A-001");
+    setLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 1. Upsert Patient
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .upsert({
+          id: user?.id, // Force ID to match Auth ID
+          nik: formData.nik,
+          full_name: formData.nama,
+          date_of_birth: formData.tanggalLahir,
+          gender: formData.jenisKelamin,
+          address: formData.alamat,
+          phone: formData.telepon,
+        }, { onConflict: 'nik' })
+        .select()
+        .single();
+
+      if (patientError) throw patientError;
+
+      // 2. Get Queue Number (Simple count + 1 for the day)
+      const { count } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('date', formData.tanggalPeriksa);
+
+      const queueNumber = (count || 0) + 1;
+
+      // 3. Create Appointment
+      const { error: appointmentError } = await supabase
+        .from('appointments')
+        .insert({
+          patient_id: patientData.id,
+          doctor_id: formData.dokter || null, // Optional
+          date: formData.tanggalPeriksa,
+          symptoms: formData.keluhan,
+          queue_number: queueNumber,
+          status: 'waiting_doctor'
+        });
+
+      if (appointmentError) throw appointmentError;
+
+      toast.success(`Pendaftaran berhasil! Nomor antrian Anda: ${queueNumber}`);
+
+      // Reset form
+      setFormData({
+        nik: "",
+        nama: "",
+        tanggalLahir: "",
+        jenisKelamin: "",
+        alamat: "",
+        telepon: "",
+        keluhan: "",
+        dokter: "",
+        tanggalPeriksa: new Date().toISOString().split('T')[0],
+      });
+
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast.error(error.message || "Gagal melakukan pendaftaran");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,6 +142,16 @@ const PatientRegistration = () => {
               <h3 className="font-semibold text-lg text-foreground border-b pb-2">Data Pribadi</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="nik">NIK *</Label>
+                  <Input
+                    id="nik"
+                    placeholder="Masukkan NIK"
+                    value={formData.nik}
+                    onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="nama">Nama Lengkap *</Label>
                   <Input
                     id="nama"
@@ -70,6 +161,9 @@ const PatientRegistration = () => {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="tanggalLahir">Tanggal Lahir *</Label>
                   <Input
@@ -80,9 +174,6 @@ const PatientRegistration = () => {
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="jenisKelamin">Jenis Kelamin *</Label>
                   <Select
@@ -98,16 +189,17 @@ const PatientRegistration = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telepon">Nomor Telepon *</Label>
-                  <Input
-                    id="telepon"
-                    placeholder="08xxxxxxxxxx"
-                    value={formData.telepon}
-                    onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
-                    required
-                  />
-                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="telepon">Nomor Telepon *</Label>
+                <Input
+                  id="telepon"
+                  placeholder="08xxxxxxxxxx"
+                  value={formData.telepon}
+                  onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
+                  required
+                />
               </div>
 
               <div className="space-y-2">
@@ -151,9 +243,11 @@ const PatientRegistration = () => {
                       <SelectValue placeholder="Pilih dokter (opsional)" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
-                      <SelectItem value="dr-sarah">Dr. Sarah Wijaya</SelectItem>
-                      <SelectItem value="dr-john">Dr. John Doe</SelectItem>
-                      <SelectItem value="dr-maria">Dr. Maria Tanaka</SelectItem>
+                      {doctors.map((doc) => (
+                        <SelectItem key={doc.id} value={doc.id}>
+                          {doc.full_name || "Dokter Tanpa Nama"}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -170,10 +264,20 @@ const PatientRegistration = () => {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button type="submit" className="flex-1" size="lg">
-                Daftar Sekarang
+              <Button type="submit" className="flex-1" size="lg" disabled={loading}>
+                {loading ? "Memproses..." : "Daftar Sekarang"}
               </Button>
-              <Button type="button" variant="outline" className="flex-1" size="lg">
+              <Button type="button" variant="outline" className="flex-1" size="lg" onClick={() => setFormData({
+                nik: "",
+                nama: "",
+                tanggalLahir: "",
+                jenisKelamin: "",
+                alamat: "",
+                telepon: "",
+                keluhan: "",
+                dokter: "",
+                tanggalPeriksa: new Date().toISOString().split('T')[0],
+              })}>
                 Reset Form
               </Button>
             </div>

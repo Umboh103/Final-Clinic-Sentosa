@@ -1,114 +1,126 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Calendar, FileText, Clock, Receipt } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PatientSchedule = () => {
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const navItems = [
     { label: "Dashboard", path: "/patient/dashboard", icon: <Calendar className="h-5 w-5" /> },
-    {
-      label: "Pendaftaran",
-      path: "/patient/registration",
-      icon: <FileText className="h-5 w-5" />,
-    },
+    { label: "Pendaftaran", path: "/patient/registration", icon: <FileText className="h-5 w-5" /> },
     { label: "Riwayat Pemeriksaan", path: "/patient/history", icon: <Clock className="h-5 w-5" /> },
     { label: "Jadwal", path: "/patient/schedule", icon: <Calendar className="h-5 w-5" /> },
     { label: "Struk Pembayaran", path: "/patient/receipt", icon: <Receipt className="h-5 w-5" /> },
   ];
 
-  const appointments = [
-    {
-      id: "APT-001",
-      tanggal: "25 Nov 2025",
-      jam: "10:00 - 11:00",
-      dokter: "Dr. Sarah Wijaya",
-      jenisPemeriksaan: "Pemeriksaan Umum",
-      status: "Terkonfirmasi",
-    },
-    {
-      id: "APT-002",
-      tanggal: "28 Nov 2025",
-      jam: "14:00 - 15:00",
-      dokter: "Dr. John Doe",
-      jenisPemeriksaan: "Kontrol Rutin",
-      status: "Menunggu Konfirmasi",
-    },
-  ];
+  useEffect(() => {
+    fetchSchedules();
+  }, []);
+
+  const fetchSchedules = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Check if patient exists first
+      const { data: patients } = await supabase.from('patients').select('id').eq('id', user.id);
+
+      if (!patients || patients.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          date,
+          queue_number,
+          status,
+          symptoms,
+          profiles:doctor_id (full_name)
+        `)
+        .eq('patient_id', user.id) // Assuming patient ID = auth ID
+        .gte('date', today)
+        .neq('status', 'cancelled')
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      if (data) setSchedules(data);
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges: any = {
+      'waiting_doctor': { label: 'Menunggu Dokter', class: 'bg-yellow-100 text-yellow-700' },
+      'in_examination': { label: 'Sedang Diperiksa', class: 'bg-blue-100 text-blue-700' },
+      'waiting_pharmacy': { label: 'Menunggu Obat', class: 'bg-purple-100 text-purple-700' },
+      'medicine_ready': { label: 'Obat Siap', class: 'bg-green-100 text-green-700' },
+      'completed': { label: 'Selesai', class: 'bg-gray-100 text-gray-700' },
+    };
+    const badge = badges[status] || { label: status, class: 'bg-gray-100' };
+    return <Badge className={badge.class}>{badge.label}</Badge>;
+  };
 
   return (
     <DashboardLayout navItems={navItems} title="Jadwal Pemeriksaan" role="Pasien">
-      <div className="space-y-6">
-        {appointments.map((apt) => (
-          <Card key={apt.id} className="shadow-soft">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="space-y-3 flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-xl font-bold text-foreground">{apt.jenisPemeriksaan}</h3>
-                    <Badge
-                      variant={apt.status === "Terkonfirmasi" ? "default" : "outline"}
-                      className={
-                        apt.status === "Terkonfirmasi"
-                          ? "bg-success/10 text-success border-success"
-                          : "bg-warning/10 text-warning border-warning"
-                      }
-                    >
-                      {apt.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span className="text-muted-foreground">Tanggal:</span>
-                      <span className="font-medium text-foreground">{apt.tanggal}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <span className="text-muted-foreground">Jam:</span>
-                      <span className="font-medium text-foreground">{apt.jam}</span>
-                    </div>
-                    <div className="flex items-center gap-2 sm:col-span-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <span className="text-muted-foreground">Dokter:</span>
-                      <span className="font-medium text-foreground">{apt.dokter}</span>
-                    </div>
-                    <div className="flex items-center gap-2 sm:col-span-2">
-                      <Receipt className="h-4 w-4 text-primary" />
-                      <span className="text-muted-foreground">No. Janji:</span>
-                      <span className="font-medium text-foreground">{apt.id}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Button size="sm">Lihat Detail</Button>
-                  <Button size="sm" variant="outline">
-                    Reschedule
-                  </Button>
-                  <Button size="sm" variant="destructive">
-                    Batalkan
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {appointments.length === 0 && (
-          <Card className="shadow-soft">
-            <CardContent className="p-12 text-center">
-              <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                Tidak Ada Jadwal
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Anda belum memiliki jadwal pemeriksaan yang terdaftar
-              </p>
-              <Button>Buat Janji Baru</Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle>Jadwal Mendatang</CardTitle>
+          <CardDescription>Daftar janji temu pemeriksaan Anda</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>No. Antrian</TableHead>
+                  <TableHead>Dokter</TableHead>
+                  <TableHead>Keluhan</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {schedules.map((schedule) => (
+                  <TableRow key={schedule.id}>
+                    <TableCell>
+                      {new Date(schedule.date).toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </TableCell>
+                    <TableCell className="font-bold text-lg">#{schedule.queue_number}</TableCell>
+                    <TableCell>{schedule.profiles?.full_name || 'Dokter Umum'}</TableCell>
+                    <TableCell>{schedule.symptoms}</TableCell>
+                    <TableCell>{getStatusBadge(schedule.status)}</TableCell>
+                  </TableRow>
+                ))}
+                {schedules.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      Tidak ada jadwal pemeriksaan mendatang
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </DashboardLayout>
   );
 };

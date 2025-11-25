@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
+import StaffRegister from "./pages/StaffRegister";
 
 // Patient Pages
 import PatientDashboard from "./pages/patient/Dashboard";
@@ -47,36 +49,38 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          
+          <Route path="/register" element={<Register />} />
+          <Route path="/staff-register" element={<StaffRegister />} />
+
           {/* Patient Routes */}
           <Route path="/patient/dashboard" element={<PatientDashboard />} />
           <Route path="/patient/registration" element={<PatientRegistration />} />
           <Route path="/patient/history" element={<PatientHistory />} />
           <Route path="/patient/schedule" element={<PatientSchedule />} />
           <Route path="/patient/receipt" element={<PatientReceipt />} />
-          
+
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/patient-registration" element={<AdminPatientRegistration />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/patient-management" element={<AdminPatientManagement />} />
-          
+
           {/* Doctor Routes */}
           <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
           <Route path="/doctor/examinations" element={<DoctorExaminations />} />
           <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
-          
+
           {/* Pharmacist Routes */}
           <Route path="/pharmacist/dashboard" element={<PharmacistDashboard />} />
           <Route path="/pharmacist/prescriptions" element={<PharmacistPrescriptions />} />
           <Route path="/pharmacist/stock" element={<PharmacistStock />} />
-          
+
           {/* Owner Routes */}
           <Route path="/owner/dashboard" element={<OwnerDashboard />} />
           <Route path="/owner/reports" element={<OwnerReports />} />
           <Route path="/owner/accounts" element={<OwnerAccounts />} />
-          
+
           {/* Catch all */}
           <Route path="*" element={<NotFound />} />
         </Routes>

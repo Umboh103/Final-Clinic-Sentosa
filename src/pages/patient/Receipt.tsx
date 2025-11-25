@@ -1,62 +1,65 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Calendar, FileText, Clock, Receipt as ReceiptIcon, Download } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Calendar, FileText, Clock, Receipt, Download } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PatientReceipt = () => {
+  const [receipts, setReceipts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const navItems = [
     { label: "Dashboard", path: "/patient/dashboard", icon: <Calendar className="h-5 w-5" /> },
-    {
-      label: "Pendaftaran",
-      path: "/patient/registration",
-      icon: <FileText className="h-5 w-5" />,
-    },
+    { label: "Pendaftaran", path: "/patient/registration", icon: <FileText className="h-5 w-5" /> },
     { label: "Riwayat Pemeriksaan", path: "/patient/history", icon: <Clock className="h-5 w-5" /> },
     { label: "Jadwal", path: "/patient/schedule", icon: <Calendar className="h-5 w-5" /> },
-    { label: "Struk Pembayaran", path: "/patient/receipt", icon: <ReceiptIcon className="h-5 w-5" /> },
+    { label: "Struk Pembayaran", path: "/patient/receipt", icon: <Receipt className="h-5 w-5" /> },
   ];
 
-  const receipts = [
-    {
-      id: "INV-001",
-      tanggal: "20 Nov 2025",
-      layanan: "Pemeriksaan Umum",
-      dokter: "Dr. Sarah Wijaya",
-      biayaPemeriksaan: 150000,
-      biayaObat: 75000,
-      total: 225000,
-      status: "Lunas",
-    },
-    {
-      id: "INV-002",
-      tanggal: "15 Nov 2025",
-      layanan: "Cek Kesehatan",
-      dokter: "Dr. John Doe",
-      biayaPemeriksaan: 150000,
-      biayaObat: 25000,
-      total: 175000,
-      status: "Lunas",
-    },
-    {
-      id: "INV-003",
-      tanggal: "10 Nov 2025",
-      layanan: "Konsultasi",
-      dokter: "Dr. Sarah Wijaya",
-      biayaPemeriksaan: 100000,
-      biayaObat: 50000,
-      total: 150000,
-      status: "Lunas",
-    },
-  ];
+  useEffect(() => {
+    fetchReceipts();
+  }, []);
+
+  const fetchReceipts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if patient exists first
+      const { data: patients } = await supabase.from('patients').select('id').eq('id', user.id);
+
+      if (!patients || patients.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          id,
+          amount,
+          status,
+          created_at,
+          method,
+          appointments!inner (
+            date,
+            profiles:doctor_id (full_name)
+          )
+        `)
+        .eq('appointments.patient_id', user.id) // Filter by patient via appointment
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setReceipts(data);
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -69,27 +72,19 @@ const PatientReceipt = () => {
   return (
     <DashboardLayout navItems={navItems} title="Struk Pembayaran" role="Pasien">
       <Card className="shadow-soft">
-        <CardContent className="p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Riwayat Pembayaran</h2>
-              <p className="text-muted-foreground mt-1">
-                Daftar struk pembayaran pemeriksaan Anda
-              </p>
-            </div>
-          </div>
-
+        <CardHeader>
+          <CardTitle>Riwayat Pembayaran</CardTitle>
+          <CardDescription>Daftar transaksi dan struk pembayaran Anda</CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>No. Invoice</TableHead>
                   <TableHead>Tanggal</TableHead>
-                  <TableHead>Layanan</TableHead>
                   <TableHead>Dokter</TableHead>
-                  <TableHead className="text-right">Pemeriksaan</TableHead>
-                  <TableHead className="text-right">Obat</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Metode</TableHead>
+                  <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aksi</TableHead>
                 </TableRow>
@@ -97,43 +92,34 @@ const PatientReceipt = () => {
               <TableBody>
                 {receipts.map((receipt) => (
                   <TableRow key={receipt.id}>
-                    <TableCell className="font-medium">{receipt.id}</TableCell>
-                    <TableCell>{receipt.tanggal}</TableCell>
-                    <TableCell>{receipt.layanan}</TableCell>
-                    <TableCell>{receipt.dokter}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(receipt.biayaPemeriksaan)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(receipt.biayaObat)}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatCurrency(receipt.total)}
-                    </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success">
-                        {receipt.status}
+                      {new Date(receipt.created_at).toLocaleDateString('id-ID')}
+                    </TableCell>
+                    <TableCell>{receipt.appointments?.profiles?.full_name || 'Dokter Umum'}</TableCell>
+                    <TableCell className="capitalize">{receipt.method || '-'}</TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(receipt.amount)}</TableCell>
+                    <TableCell>
+                      <Badge variant={receipt.status === 'paid' ? 'default' : 'outline'} className={receipt.status === 'paid' ? 'bg-green-100 text-green-700' : ''}>
+                        {receipt.status === 'paid' ? 'Lunas' : 'Pending'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => window.print()}>
                         <Download className="h-4 w-4 mr-2" />
-                        Download
+                        Cetak
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
+                {receipts.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      Belum ada riwayat pembayaran
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
-          </div>
-
-          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold text-foreground">Total Pembayaran:</span>
-              <span className="text-2xl font-bold text-primary">
-                {formatCurrency(receipts.reduce((sum, r) => sum + r.total, 0))}
-              </span>
-            </div>
           </div>
         </CardContent>
       </Card>

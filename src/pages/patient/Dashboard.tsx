@@ -4,9 +4,19 @@ import { Calendar, FileText, Clock, Receipt } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalVisits: 0,
+    upcomingAppointments: 0,
+    activePrescriptions: 0,
+    unpaidBills: 0
+  });
+  const [upcomingList, setUpcomingList] = useState<any[]>([]);
+  const [recentVisits, setRecentVisits] = useState<any[]>([]);
 
   const navItems = [
     { label: "Dashboard", path: "/patient/dashboard", icon: <Calendar className="h-5 w-5" /> },
@@ -20,20 +30,105 @@ const PatientDashboard = () => {
     { label: "Struk Pembayaran", path: "/patient/receipt", icon: <Receipt className="h-5 w-5" /> },
   ];
 
-  const upcomingAppointments = [
-    { date: "25 Nov 2025", time: "10:00", doctor: "Dr. Sarah Wijaya", type: "Pemeriksaan Umum" },
-    { date: "28 Nov 2025", time: "14:00", doctor: "Dr. John Doe", type: "Kontrol Rutin" },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const recentVisits = [
-    {
-      date: "20 Nov 2025",
-      doctor: "Dr. Sarah Wijaya",
-      diagnosis: "Flu ringan",
-      status: "Selesai",
-    },
-    { date: "15 Nov 2025", doctor: "Dr. John Doe", diagnosis: "Cek kesehatan", status: "Selesai" },
-  ];
+  const fetchDashboardData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Get patient ID
+    const { data: patients, error: patientError } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('id', user.id);
+
+    if (patientError || !patients || patients.length === 0) {
+      // Patient not found - show empty state or redirect
+      setStats({
+        totalVisits: 0,
+        upcomingAppointments: 0,
+        activePrescriptions: 0,
+        unpaidBills: 0
+      });
+      return;
+    }
+
+    const patient = patients[0];
+    const today = new Date().toISOString().split('T')[0];
+
+    // 1. Stats
+    const { count: totalVisits } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('patient_id', patient.id)
+      .eq('status', 'completed');
+
+    const { count: upcomingCount } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('patient_id', patient.id)
+      .gte('date', today)
+      .neq('status', 'completed')
+      .neq('status', 'cancelled');
+
+    // Active prescriptions (appointments in pharmacy stage)
+    const { count: activePrescriptions } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('patient_id', patient.id)
+      .in('status', ['waiting_pharmacy', 'medicine_ready']);
+
+    // Unpaid bills
+    const { data: unpaidAppts } = await supabase
+      .from('appointments')
+      .select('id, payments(status)')
+      .eq('patient_id', patient.id)
+      .eq('status', 'completed');
+
+    const unpaidCount = unpaidAppts?.filter(a => !a.payments || a.payments.length === 0 || a.payments[0].status === 'pending').length || 0;
+
+    setStats({
+      totalVisits: totalVisits || 0,
+      upcomingAppointments: upcomingCount || 0,
+      activePrescriptions: activePrescriptions || 0,
+      unpaidBills: unpaidCount
+    });
+
+    // 2. Upcoming List
+    const { data: upcoming } = await supabase
+      .from('appointments')
+      .select(`
+        id,
+        date,
+        status,
+        profiles:doctor_id (full_name)
+      `)
+      .eq('patient_id', patient.id)
+      .gte('date', today)
+      .neq('status', 'completed')
+      .neq('status', 'cancelled')
+      .order('date', { ascending: true })
+      .limit(3);
+
+    if (upcoming) setUpcomingList(upcoming);
+
+    // 3. Recent Visits
+    const { data: recent } = await supabase
+      .from('medical_records')
+      .select(`
+        id,
+        created_at,
+        diagnosis,
+        doctor:doctor_id (full_name)
+      `)
+      .eq('patient_id', patient.id)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    if (recent) setRecentVisits(recent);
+  };
 
   return (
     <DashboardLayout navItems={navItems} title="Dashboard Pasien" role="Pasien">
@@ -41,31 +136,49 @@ const PatientDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Total Kunjungan"
-          value="12"
+          value={stats.totalVisits.toString()}
           icon={<FileText className="h-6 w-6 text-primary" />}
-          description="Sepanjang tahun ini"
+          description="Pemeriksaan selesai"
         />
         <StatCard
           title="Jadwal Mendatang"
-          value="2"
+          value={stats.upcomingAppointments.toString()}
           icon={<Calendar className="h-6 w-6 text-secondary" />}
-          description="Dalam 7 hari ke depan"
+          description="Janji temu aktif"
         />
         <StatCard
-          title="Resep Aktif"
-          value="3"
+          title="Resep Diproses"
+          value={stats.activePrescriptions.toString()}
           icon={<FileText className="h-6 w-6 text-accent" />}
-          description="Perlu diambil"
+          description="Di apotek"
         />
         <StatCard
-          title="Tagihan"
-          value="Rp 0"
-          icon={<Receipt className="h-6 w-6 text-success" />}
-          description="Semua lunas"
+          title="Tagihan Belum Lunas"
+          value={stats.unpaidBills.toString()}
+          icon={<Receipt className="h-6 w-6 text-warning" />}
+          description="Perlu pembayaran"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Welcome / Registration Prompt for New Users */}
+        {stats.totalVisits === 0 && stats.upcomingAppointments === 0 && (
+          <Card className="col-span-1 lg:col-span-2 bg-primary/5 border-primary/20 shadow-soft">
+            <CardHeader>
+              <CardTitle className="text-primary">Selamat Datang di Klinik Sentosa!</CardTitle>
+              <CardDescription>
+                Sepertinya Anda belum memiliki riwayat pemeriksaan. Silakan lakukan pendaftaran untuk pemeriksaan pertama Anda.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate("/patient/registration")} className="w-full sm:w-auto">
+                <FileText className="mr-2 h-4 w-4" />
+                Daftar Pemeriksaan Sekarang
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Upcoming Appointments */}
         <Card className="shadow-soft">
           <CardHeader>
@@ -76,23 +189,23 @@ const PatientDashboard = () => {
             <CardDescription>Jadwal pemeriksaan Anda yang akan datang</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {upcomingAppointments.map((apt, index) => (
+            {upcomingList.map((apt) => (
               <div
-                key={index}
+                key={apt.id}
                 className="flex items-start justify-between p-4 bg-muted/50 rounded-lg border border-border"
               >
                 <div className="flex-1">
-                  <p className="font-semibold text-foreground">{apt.doctor}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{apt.type}</p>
+                  <p className="font-semibold text-foreground">{apt.profiles?.full_name || 'Dokter Umum'}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Status: {apt.status}</p>
                   <p className="text-sm text-primary font-medium mt-2">
-                    {apt.date} - {apt.time}
+                    {new Date(apt.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
                 </div>
-                <Button size="sm" variant="outline">
-                  Detail
-                </Button>
               </div>
             ))}
+            {upcomingList.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">Tidak ada jadwal mendatang</p>
+            )}
             <Button
               onClick={() => navigate("/patient/schedule")}
               className="w-full"
@@ -113,23 +226,28 @@ const PatientDashboard = () => {
             <CardDescription>Riwayat pemeriksaan terakhir Anda</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentVisits.map((visit, index) => (
+            {recentVisits.map((visit) => (
               <div
-                key={index}
+                key={visit.id}
                 className="flex items-start justify-between p-4 bg-muted/50 rounded-lg border border-border"
               >
                 <div className="flex-1">
-                  <p className="font-semibold text-foreground">{visit.doctor}</p>
+                  <p className="font-semibold text-foreground">{visit.doctor?.full_name}</p>
                   <p className="text-sm text-muted-foreground mt-1">{visit.diagnosis}</p>
                   <div className="flex items-center gap-3 mt-2">
-                    <p className="text-sm text-muted-foreground">{visit.date}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(visit.created_at).toLocaleDateString('id-ID')}
+                    </p>
                     <span className="px-2 py-1 bg-success/10 text-success text-xs rounded-full font-medium">
-                      {visit.status}
+                      Selesai
                     </span>
                   </div>
                 </div>
               </div>
             ))}
+            {recentVisits.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">Belum ada riwayat kunjungan</p>
+            )}
             <Button
               onClick={() => navigate("/patient/history")}
               className="w-full"

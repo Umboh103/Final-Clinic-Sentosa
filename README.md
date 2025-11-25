@@ -1,73 +1,178 @@
-# Welcome to your Lovable project
+# 🏥 Clinic Sentosa - Modern Clinic Management System
 
-## Project info
+**Sistem Manajemen Klinik Modern Berbasis Web**
 
-**URL**: https://lovable.dev/projects/e5855046-14b5-4705-9c05-8f889e931ffa
+![React](https://img.shields.io/badge/React-18.0+-blue.svg)
+![Vite](https://img.shields.io/badge/Vite-5.0+-purple.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)
+![Supabase](https://img.shields.io/badge/Supabase-Database-green.svg)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.0+-cyan.svg)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 👥 Tim Pengembang
 
-**Use Lovable**
+**Ketua Kelompok:**
+- **Imanuel Palenewen** 
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e5855046-14b5-4705-9c05-8f889e931ffa) and start prompting.
+**Anggota Kelompok :**
+- **Umboh, Timothy**
+- **Tjia, David**
+- **Tjiu, Kevin**
 
-Changes made via Lovable will be committed automatically to this repo.
+**Project:** Clinic Management System 
+**Mata kuliah:** System Analysis Design
+**Semester:** 5
+**Tahun Akademik:** 2024/2025
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 📖 Tentang Proyek
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Clinic Sentosa adalah sistem manajemen klinik terpadu yang dirancang untuk memodernisasi operasional klinik. Sistem ini mengintegrasikan pendaftaran pasien, rekam medis elektronik, manajemen apotek, dan pelaporan keuangan dalam satu platform yang efisien dan mudah digunakan.
 
-Follow these steps:
+### ✨ Fitur Utama
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- 🏥 **Manajemen Pasien**: Pendaftaran pasien baru, riwayat kunjungan, dan manajemen antrian.
+- 👨‍⚕️ **Dashboard Dokter**: Akses rekam medis, diagnosa, dan pembuatan resep obat digital.
+- 💊 **Sistem Apotek**: Pemrosesan resep, manajemen stok obat, dan penyerahan obat.
+- 💰 **Kasir & Keuangan**: Pembayaran terintegrasi dan laporan pendapatan harian/bulanan.
+- 🔐 **Role-Based Access**: Akses aman untuk Admin, Dokter, Apoteker, Pemilik, dan Pasien.
+- 📱 **UI Responsif**: Tampilan modern dan responsif menggunakan Tailwind CSS dan Shadcn UI.
+- ⚡ **Real-time Updates**: Pembaruan data instan menggunakan Supabase Realtime.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 🛠 Teknologi yang Digunakan
 
-# Step 3: Install the necessary dependencies.
-npm i
+- **Frontend**: React, TypeScript, Vite
+- **Styling**: Tailwind CSS, Shadcn UI
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
+- **State Management**: React Query
+- **Form Handling**: React Hook Form, Zod
+- **Icons**: Lucide React
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+---
+
+## 🚀 Cara Instalasi dan Menjalankan
+
+### 📋 Prasyarat
+
+- Node.js (v18 atau lebih tinggi)
+- npm atau yarn
+- Akun Supabase (untuk backend)
+- Git
+
+### 📥 Langkah 1: Clone Repository
+
+```bash
+git clone https://github.com/Imanuelpalenewen/clinic-sentosa-ui.git
+cd clinic-sentosa-ui
+```
+
+### 📦 Langkah 2: Install Dependencies
+
+```bash
+npm install
+```
+
+### 🔑 Langkah 3: Setup Environment Variables
+
+1. Buat file `.env` di root folder project 
+
+2. Edit file `.env` dan isi dengan kredensial Supabase Anda:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 🗄️ Langkah 4: Setup Database (Supabase)
+
+1. Login ke [Supabase Dashboard](https://supabase.com/dashboard).
+2. Masuk ke menu **SQL Editor**.
+3. Buka file `supabase_schema.sql` yang ada di repository ini.
+4. Copy seluruh isinya dan paste ke SQL Editor Supabase.
+5. Klik **Run** untuk membuat tabel, relasi, dan kebijakan keamanan (RLS).
+
+### ▶ Langkah 5: Jalankan Aplikasi
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Aplikasi akan berjalan di: **http://localhost:8080** (atau port lain yang tersedia).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 📱 Cara Menggunakan
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 1️⃣ Login
+- Gunakan akun yang sudah didaftarkan atau buat akun baru (jika fitur register aktif).
+- Login sesuai role (Dokter, Admin, dll) untuk melihat dashboard yang sesuai.
 
-## What technologies are used for this project?
+### 2️⃣ Alur Pasien (Contoh)
+1. **Pendaftaran**: Admin mendaftarkan pasien baru.
+2. **Pemeriksaan**: Dokter melihat antrian, memeriksa pasien, dan membuat resep.
+3. **Farmasi**: Apoteker menerima resep, menyiapkan obat, dan update status.
+4. **Pembayaran**: Kasir memproses pembayaran.
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🗂 Struktur Project
 
-## How can I deploy this project?
+```
+clinic-sentosa/
+├── src/
+│   ├── components/        # Komponen UI Reusable (Button, Input, dll)
+│   ├── pages/            # Halaman-halaman aplikasi
+│   │   ├── admin/        # Halaman khusus Admin
+│   │   ├── doctor/       # Halaman khusus Dokter
+│   │   ├── owner/        # Halaman khusus Owner
+│   │   ├── patient/      # Halaman khusus Pasien
+│   │   └── pharmacist/   # Halaman khusus Apoteker
+│   ├── integrations/     # Integrasi pihak ketiga (Supabase)
+│   ├── hooks/            # Custom React Hooks
+│   └── App.tsx           # Main Application Component
+├── public/               # Static assets
+├── supabase_schema.sql   # Script database
+└── README.md             # Dokumentasi ini
+```
 
-Simply open [Lovable](https://lovable.dev/projects/e5855046-14b5-4705-9c05-8f889e931ffa) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## ⚠ Troubleshooting
 
-Yes, you can!
+### ❌ Error: "Missing Supabase environment variables"
+**Solusi:**
+- Pastikan file `.env` sudah dibuat dan berisi URL serta Key yang benar.
+- Restart server development (`npm run dev`) setelah mengubah `.env`.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### ❌ Error: "Database error / Table not found"
+**Solusi:**
+- Pastikan Anda sudah menjalankan script `supabase_schema.sql` di dashboard Supabase.
+- Periksa koneksi internet.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 🎓 Referensi & Credits
+
+- **React**: [React Documentation](https://react.dev/)
+- **Supabase**: [Supabase Documentation](https://supabase.com/docs)
+- **Tailwind CSS**: [Tailwind CSS](https://tailwindcss.com/)
+- **Shadcn UI**: [ui.shadcn.com](https://ui.shadcn.com/)
+- **Lovable**: Generated with Lovable
+
+---
+
+## 📝 Lisensi
+
+Proyek ini dilisensikan di bawah [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+**🏥 Dibuat dengan ❤ untuk Pelayanan Kesehatan yang Lebih Baik**
+
+*Clinic Sentosa - Your Health, Our Priority*
+
+</div>
